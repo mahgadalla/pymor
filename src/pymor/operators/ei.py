@@ -84,14 +84,13 @@ class EmpiricalInterpolatedOperator(OperatorBase):
             self.interpolation_matrix = interpolation_matrix
             self.collateral_basis = collateral_basis.copy()
 
-    def apply(self, U, ind=None, mu=None):
+    def apply(self, U, mu=None):
         mu = self.parse_parameter(mu)
         if len(self.interpolation_dofs) == 0:
-            count = len(ind) if ind is not None else len(U)
-            return self.range.zeros(count=count)
+            return self.range.zeros(count=len(U))
 
         if hasattr(self, 'restricted_operator'):
-            U_components = NumpyVectorArray(U.components(self.source_dofs, ind=ind), copy=False)
+            U_components = NumpyVectorArray(U.components(self.source_dofs), copy=False)
             AU = self.restricted_operator.apply(U_components, mu=mu)
         else:
             AU = NumpyVectorArray(self.operator.apply(U, mu=mu).components(self.interpolation_dofs), copy=False)
@@ -185,10 +184,9 @@ class ProjectedEmpiciralInterpolatedOperator(OperatorBase):
         self.solver_options = solver_options
         self.name = name or '{}_projected'.format(restricted_operator.name)
 
-    def apply(self, U, ind=None, mu=None):
+    def apply(self, U, mu=None):
         mu = self.parse_parameter(mu)
-        U_array = U._array if ind is None else U._array[ind]
-        U_components = self.source_basis_dofs.lincomb(U_array)
+        U_components = self.source_basis_dofs.lincomb(U.data)
         AU = self.restricted_operator.apply(U_components, mu=mu)
         try:
             if self.triangular:

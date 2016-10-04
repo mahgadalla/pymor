@@ -171,16 +171,16 @@ class VectorArrayInterface(BasicInterface):
         """
         pass
 
+    __getitem__ = copy
+
     @abstractmethod
-    def append(self, other, o_ind=None, remove_from_other=False):
+    def append(self, other, remove_from_other=False):
         """Append vectors to the array.
 
         Parameters
         ----------
         other
             A |VectorArray| containing the vectors to be appended.
-        o_ind
-            Indices of the vectors that are to be appended (see class documentation).
         remove_from_other
             If `True`, the appended vectors are removed from `other`.
             For list-like implementations this can be used to prevent
@@ -199,8 +199,10 @@ class VectorArrayInterface(BasicInterface):
         """
         pass
 
+    __delitem__ = remove
+
     @abstractmethod
-    def scal(self, alpha, ind=None):
+    def scal(self, alpha, *, ind=None):
         """BLAS SCAL operation (in-place scalar multiplication).
 
         This method calculates ::
@@ -223,15 +225,15 @@ class VectorArrayInterface(BasicInterface):
         pass
 
     @abstractmethod
-    def axpy(self, alpha, x, ind=None, x_ind=None):
+    def axpy(self, alpha, x, *, ind=None):
         """BLAS AXPY operation.
 
         This method forms the sum ::
 
-            self[ind] = alpha*x[x_ind] + self[ind]
+            self[ind] = alpha*x + self[ind]
 
-        If the length of `x` (`x_ind`) is 1, the same `x` vector is used for all vectors
-        in `self`. Otherwise, the lengths of `self` (`ind`) and `x` (`x_ind`) have to agree.
+        If the length of `x` is 1, the same `x` vector is used for all vectors
+        in `self`. Otherwise, the lengths of `self` (`ind`) and `x` have to agree.
         If `alpha` is a scalar, each `x` vector is multiplied with the same factor `alpha`.
         Otherwise, `alpha` has to be a one-dimensional |NumPy array| of the same length as
         `self` (`ind`)  containing the coefficients for each `x` vector.
@@ -246,62 +248,47 @@ class VectorArrayInterface(BasicInterface):
         ind
             Indices of the vectors of `self` that are to be added (see class documentation).
             Repeated indices are forbidden.
-        x_ind
-            Indices of the vectors in `x` that are to be added (see class documentation).
-            Repeated indices are allowed.
         """
         pass
 
     @abstractmethod
-    def dot(self, other, ind=None, o_ind=None):
+    def dot(self, other):
         """Returns the inner products between |VectorArray| elements.
 
         Parameters
         ----------
         other
             A |VectorArray| containing the second factors.
-        ind
-            Indices of the vectors whose inner products are to be taken
-            (see class documentation).
-        o_ind
-            Indices of the vectors in `other` whose inner products are to be
-            taken (see class documentation).
 
         Returns
         -------
         A |NumPy array| `result` such that:
 
-            result[i, j] = ( self[ind[i]], other[o_ind[j]] ).
+            result[i, j] = ( self[i], other[j] ).
 
         """
         pass
 
     @abstractmethod
-    def pairwise_dot(self, other, ind=None, o_ind=None):
+    def pairwise_dot(self, other):
         """Returns the pairwise inner products between |VectorArray| elements.
 
         Parameters
         ----------
         other
             A |VectorArray| containing the second factors.
-        ind
-            Indices of the vectors whose inner products are to be taken
-            (see class documentation).
-        o_ind
-            Indices of the vectors in `other` whose inner products are to be
-            taken (see class documentation).
 
         Returns
         -------
         A |NumPy array| `result` such that:
 
-            result[i] = ( self[ind[i]], other[o_ind[i]] ).
+            result[i] = ( self[i], other[i] ).
 
         """
         pass
 
     @abstractmethod
-    def lincomb(self, coefficients, ind=None):
+    def lincomb(self, coefficients):
         """Returns linear combinations of the vectors contained in the array.
 
         Parameters
@@ -310,8 +297,6 @@ class VectorArrayInterface(BasicInterface):
             A |NumPy array| of dimension 1 or 2 containing the linear
             coefficients. `coefficients.shape[-1]` has to agree with
             `len(self)`.
-        ind
-            Indices of the vectors which are linear combined (see class documentation).
 
         Returns
         -------
@@ -327,65 +312,45 @@ class VectorArrayInterface(BasicInterface):
         pass
 
     @abstractmethod
-    def l1_norm(self, ind=None):
+    def l1_norm(self):
         """The l1-norms of the vectors contained in the array.
 
-        Parameters
-        ----------
-        ind
-            Indices of the vectors whose norms are to be calculated (see class documentation).
-
         Returns
         -------
         A |NumPy array| `result` such that `result[i]` contains the norm
-        of `self[ind[i]]`.
+        of `self[i]`.
         """
         pass
 
     @abstractmethod
-    def l2_norm(self, ind=None):
+    def l2_norm(self):
         """The l2-norms of the vectors contained in the array.
 
-        Parameters
-        ----------
-        ind
-            Indices of the vectors whose norms are to be calculated (see class documentation).
-
         Returns
         -------
         A |NumPy array| `result` such that `result[i]` contains the norm
-        of `self[ind[i]]`.
+        of `self[i]`.
         """
         pass
 
     @abstractmethod
-    def l2_norm2(self, ind=None):
+    def l2_norm2(self):
         """The squared l2-norms of the vectors contained in the array.
-
-        Parameters
-        ----------
-        ind
-            Indices of the vectors whose norms are to be calculated (see class documentation).
 
         Returns
         -------
         A |NumPy array| `result` such that `result[i]` contains the norm
-        of `self[ind][i]`.
+        of `self[i]`.
         """
         pass
 
-    def sup_norm(self, ind=None):
+    def sup_norm(self):
         """The l-infinity--norms of the vectors contained in the array.
-
-        Parameters
-        ----------
-        ind
-            Indices of the vectors whose norms are to be calculated (see class documentation).
 
         Returns
         -------
         A |NumPy array| `result` such that `result[i]` contains the norm
-        of `self[ind[i]]`.
+        of `self[i]`.
         """
         if self.dim == 0:
             assert self.check_ind(ind)
@@ -395,7 +360,7 @@ class VectorArrayInterface(BasicInterface):
             return max_val
 
     @abstractmethod
-    def components(self, component_indices, ind=None):
+    def components(self, component_indices):
         """Extract components of the vectors contained in the array.
 
         Parameters
@@ -403,25 +368,17 @@ class VectorArrayInterface(BasicInterface):
         component_indices
             List or 1D |NumPy array| of indices of the vector components that are to
             be returned.
-        ind
-            Indices of the vectors whose components are to be retrieved (see class documentation).
 
         Returns
         -------
         A |NumPy array| `result` such that `result[i, j]` is the `component_indices[j]`-th
-        component of the `ind[i]`-th vector of the array.
+        component of the `i`-th vector of the array.
         """
         pass
 
     @abstractmethod
-    def amax(self, ind=None):
+    def amax(self):
         """The maximum absolute value of the vectors contained in the array.
-
-        Parameters
-        ----------
-        ind
-            Indices of the vectors whose maximum absolute value is to be calculated
-            (see class documentation).
 
         Returns
         -------
@@ -434,9 +391,9 @@ class VectorArrayInterface(BasicInterface):
         """
         pass
 
-    def gramian(self, ind=None):
-        """Shorthand for `self.dot(self, ind=ind, o_ind=ind)`."""
-        return self.dot(self, ind=ind, o_ind=ind)
+    def gramian(self):
+        """Shorthand for `self.dot(self)`."""
+        return self.dot(self)
 
     def __add__(self, other):
         """The pairwise sum of two |VectorArrays|."""
