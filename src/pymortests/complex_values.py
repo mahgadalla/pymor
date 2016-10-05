@@ -44,7 +44,7 @@ def test_complex():
 
             assert not np.iscomplexobj(va.data)
             assert np.iscomplexobj(Dva.data)
-            va.append(Dva, o_ind)
+            va.append(Dva[o_ind])
             assert np.iscomplexobj(va.data)
 
     # scal
@@ -54,12 +54,12 @@ def test_complex():
 
     # axpy
     assert not np.iscomplexobj(Cva.data)
-    Cva.axpy(1, Dva, 0)
+    Cva.axpy(1, Dva, ind=0)
     assert np.iscomplexobj(Cva.data)
 
     Cva = NumpyVectorArray(C)
     assert not np.iscomplexobj(Cva.data)
-    Cva.axpy(1j, Dva, 0)
+    Cva.axpy(1j, Dva, ind=0)
     assert np.iscomplexobj(Cva.data)
 
 def test_real_imag():
