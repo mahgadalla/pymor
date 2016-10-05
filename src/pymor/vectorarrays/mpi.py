@@ -83,11 +83,15 @@ class MPIVectorArray(VectorArrayInterface):
         return type(self)(self.cls, self.array_subtype,
                           mpi.call(mpi.method_call_manage, self.obj_id, 'copy', ind=ind, deep=deep))
 
+    __getitem__ = copy
+
     def append(self, other, remove_from_other=False):
         mpi.call(mpi.method_call, self.obj_id, 'append', other.obj_id, remove_from_other=remove_from_other)
 
     def remove(self, ind=None):
         mpi.call(mpi.method_call, self.obj_id, 'remove', ind=ind)
+
+    __delitem__ = copy
 
     def scal(self, alpha, *, ind=None):
         mpi.call(mpi.method_call, self.obj_id, 'scal', alpha, ind=ind)

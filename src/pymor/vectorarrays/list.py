@@ -321,7 +321,7 @@ class ListVectorArray(VectorArrayInterface):
 
         if ind is None:
             vecs = [v.copy(deep=deep) for v in self._list]
-        elif isinstance(ind, Number):
+        elif isinstance(ind, _INDEXTYPES):
             vecs = [self._list[ind].copy(deep=deep)]
         else:
             vecs = [self._list[i].copy(deep=deep) for i in ind]

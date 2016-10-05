@@ -227,7 +227,7 @@ def reduce_coercive_simple(discretization, RB, product=None, coercivity_estimato
                 RR_O.append(old_RR_O)
         for op, R_O, RR_O in zip(d.operator.operators, R_Os, RR_Os):
             for i in range(old_RB_size, len(RB)):
-                append_vector(-op.apply(RB, [i]), R_O, RR_O)
+                append_vector(-op.apply(RB[i]), R_O, RR_O)
 
     # compute Gram matrix of the residuals
     R_RR = RR_R.dot(R_R)
