@@ -353,10 +353,9 @@ class VectorArrayInterface(BasicInterface):
         of `self[i]`.
         """
         if self.dim == 0:
-            assert self.check_ind(ind)
-            return np.zeros(self.len_ind(ind))
+            return np.zeros(len(self))
         else:
-            _, max_val = self.amax(ind)
+            _, max_val = self.amax()
             return max_val
 
     @abstractmethod

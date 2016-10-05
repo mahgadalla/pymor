@@ -99,6 +99,8 @@ class BlockVectorArray(VectorArrayInterface):
         assert self.check_ind(ind)
         return BlockVectorArray([block.copy(ind=ind, deep=deep) for block in self._blocks], copy=False)
 
+    __getitem__ = copy
+
     def append(self, other, remove_from_other=False):
         assert self._blocks_are_valid()
         assert other in self.space
@@ -110,6 +112,8 @@ class BlockVectorArray(VectorArrayInterface):
         for block in self._blocks:
             block.remove(ind)
 
+    __delitem__ = remove
+
     def scal(self, alpha, *, ind=None):
         for block in self._blocks:
             block.scal(alpha, ind=ind)
@@ -120,7 +124,7 @@ class BlockVectorArray(VectorArrayInterface):
             or isinstance(alpha, np.ndarray) and alpha.shape == (self.len_ind(ind),)
         if len(x) > 0:
             for block, x_block in zip(self._blocks, x._blocks):
-                block.axpy(alpha, x_block, ind)
+                block.axpy(alpha, x_block, ind=ind)
         else:
             assert self.len_ind(ind) == 0
 

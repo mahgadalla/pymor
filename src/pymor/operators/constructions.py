@@ -558,7 +558,7 @@ class VectorArrayOperator(OperatorBase):
         if not self.transposed:
             return self._array.lincomb(U.data)
         else:
-            return NumpyVectorArray(U.dot(self.data), copy=False)
+            return NumpyVectorArray(U.dot(self._array), copy=False)
 
     def apply_adjoint(self, U, mu=None, source_product=None, range_product=None):
         assert U in self.range
