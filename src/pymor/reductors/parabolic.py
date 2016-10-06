@@ -141,7 +141,7 @@ class ReduceParabolicEstimator(ImmutableInterface):
 
         est = np.empty(len(U))
         est[0] = (1./C) * self.initial_residual.apply(U[0], mu=mu).l2_norm2()[0]
-        est[1:] = self.residual.apply(U[list(range(1, len(U)))], U[list(range(0, len(U) - 1))],
+        est[1:] = self.residual.apply(U[1:len(U)], U[0:len(U)-1],
                                       mu=mu).l2_norm2()
         est[1:] *= (dt/C**2)
         est = np.sqrt(np.cumsum(est))

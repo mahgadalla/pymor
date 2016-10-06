@@ -101,6 +101,18 @@ class NumpyVectorArray(VectorArrayInterface):
     def dim(self):
         return self._array.shape[1]
 
+    def _map_ind(self, ind):
+        if ind is None:
+            return slice(0, self._len)
+        elif type(ind) is slice:
+            return slice(*ind.indices(self._len))
+        elif not hasattr(ind, '__len__'):
+            ind = ind if 0 <= ind else self._len+ind
+            return slice(ind, ind+1)
+        else:
+            l = self._len
+            return [i if 0 <= i else l+i for i in ind]
+
     def copy(self, ind=None, deep=False):
         assert self.check_ind(ind)
 
@@ -117,7 +129,7 @@ class NumpyVectorArray(VectorArrayInterface):
         if ind is None:
             return NumpyVectorArray(self._array[:self._len], copy=True)
         else:
-            C = NumpyVectorArray(self._array[ind], copy=False)
+            C = NumpyVectorArray(self._array[self._map_ind(ind)], copy=False)
             if not C._array.flags['OWNDATA']:
                 C._array = np.array(C._array)
             return C
@@ -153,18 +165,19 @@ class NumpyVectorArray(VectorArrayInterface):
         if ind is None:
             self._array = np.zeros((0, self.dim))
             self._len = 0
-        else:
-            if hasattr(ind, '__len__'):
-                if len(ind) == 0:
-                    return
-                remaining = sorted(set(range(len(self))) - set(ind))
-                self._array = self._array[remaining]
-            else:
-                assert -self._len < ind < self._len
-                self._array = self._array[list(range(ind)) + list(range(ind + 1, self._len))]
-            self._len = self._array.shape[0]
-        if not self._array.flags['OWNDATA']:
-            self._array = self._array.copy()
+            return
+
+        l = len(self)
+        ind = (range(*ind.indices(l)) if type(ind) is slice else
+               [ind if 0 <= ind else l+ind] if not hasattr(ind, '__len__') else
+               [i if 0 <= i else l+i for i in ind])
+        if len(ind) == 0:
+            return
+
+        remaining = sorted(set(range(l)) - set(ind))
+        self._array = self._array[remaining]
+        self._len = self._array.shape[0]
+        assert self._array.flags['OWNDATA']
 
     __delitem__ = remove
 
@@ -179,18 +192,15 @@ class NumpyVectorArray(VectorArrayInterface):
         if NUMPY_INDEX_QUIRK and self._len == 0:
             return
 
-        if isinstance(alpha, np.ndarray) and not isinstance(ind, Number):
+        ind = self._map_ind(ind)
+        if isinstance(alpha, np.ndarray):
             alpha = alpha[:, np.newaxis]
 
         alpha_type = type(alpha)
         alpha_dtype = alpha.dtype if alpha_type is np.ndarray else alpha_type
         if self._array.dtype != alpha_dtype:
             self._array = self._array.astype(np.promote_types(self._array.dtype, alpha_dtype))
-
-        if ind is None:
-            self._array[:self._len] *= alpha
-        else:
-            self._array[ind] *= alpha
+        self._array[ind] *= alpha
 
     def axpy(self, alpha, x, *, ind=None):
         assert self.check_ind_unique(ind)
@@ -202,9 +212,8 @@ class NumpyVectorArray(VectorArrayInterface):
         if self._refcount[0] > 1:
             self._deep_copy()
 
-        if NUMPY_INDEX_QUIRK:
-            if self._len == 0 and hasattr(ind, '__len__'):
-                ind = None
+        if self._len == 0:
+            return
 
         if np.all(alpha == 0):
             return
@@ -218,29 +227,15 @@ class NumpyVectorArray(VectorArrayInterface):
             dtype = np.promote_types(dtype, B.dtype)
             self._array = self._array.astype(dtype)
 
+        ind = self._map_ind(ind)
         if np.all(alpha == 1):
-            if ind is None:
-                self._array[:self._len] += B
-            elif isinstance(ind, Number) and B.ndim == 2:
-                self._array[ind] += B.reshape((B.shape[1],))
-            else:
-                self._array[ind] += B
+            self._array[ind] += B
         elif np.all(alpha == -1):
-            if ind is None:
-                self._array[:self._len] -= B
-            elif isinstance(ind, Number) and B.ndim == 2:
-                self._array[ind] -= B.reshape((B.shape[1],))
-            else:
-                self._array[ind] -= B
+            self._array[ind] -= B
         else:
             if isinstance(alpha, np.ndarray):
                 alpha = alpha[:, np.newaxis]
-            if ind is None:
-                self._array[:self._len] += (B * alpha)
-            elif isinstance(ind, Number):
-                self._array[ind] += (B * alpha).reshape((-1,))
-            else:
-                self._array[ind] += (B * alpha)
+            self._array[ind] += B * alpha
 
     def dot(self, other):
         assert self.dim == other.dim

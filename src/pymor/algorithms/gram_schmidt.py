@@ -113,9 +113,9 @@ def gram_schmidt(A, product=None, atol=1e-13, rtol=1e-13, offset=0, find_duplica
 
     if check:
         if product:
-            error_matrix = product.apply2(A[list(range(offset, len(A)))], A)
+            error_matrix = product.apply2(A[offset:len(A)], A)
         else:
-            error_matrix = A[list(range(offset, len(A)))].dot(A)
+            error_matrix = A[offset:len(A)].dot(A)
         error_matrix[:len(A) - offset, offset:len(A)] -= np.eye(len(A) - offset)
         if error_matrix.size > 0:
             err = np.max(np.abs(error_matrix))

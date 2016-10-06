@@ -321,7 +321,9 @@ class ListVectorArray(VectorArrayInterface):
 
         if ind is None:
             vecs = [v.copy(deep=deep) for v in self._list]
-        elif isinstance(ind, _INDEXTYPES):
+        elif type(ind) is slice:
+            vecs = [self._list[i].copy(deep=deep) for i in range(*ind.indices(len(self._list)))]
+        elif not hasattr(ind, '__len__'):
             vecs = [self._list[ind].copy(deep=deep)]
         else:
             vecs = [self._list[i].copy(deep=deep) for i in ind]
@@ -345,11 +347,12 @@ class ListVectorArray(VectorArrayInterface):
         assert self.check_ind(ind)
         if ind is None:
             self._list = []
-        elif isinstance(ind, Number):
+        elif type(ind) is slice or not hasattr(ind, '__len__'):
             del self._list[ind]
         else:
             thelist = self._list
-            remaining = sorted(set(range(len(self._list))) - set(ind))
+            l = len(thelist)
+            remaining = sorted(set(range(l)) - set(i if 0 <= i else l+i for i in ind))
             self._list = [thelist[i] for i in remaining]
 
     __delitem__ = remove
@@ -366,12 +369,14 @@ class ListVectorArray(VectorArrayInterface):
             else:
                 for v in self._list:
                     v.scal(alpha)
-        elif isinstance(ind, Number):
+        elif isinstance(ind, _INDEXTYPES):
             if isinstance(alpha, np.ndarray):
                 alpha = alpha[0]
             self._list[ind].scal(alpha)
         else:
             l = self._list
+            if type(ind) is slice:
+                ind = range(*ind.indices(len(l)))
             if isinstance(alpha, np.ndarray):
                 for a, i in zip(alpha, ind):
                     l[i].scal(a)
@@ -402,6 +407,8 @@ class ListVectorArray(VectorArrayInterface):
             Y = iter([self._list[ind]])
             len_Y = 1
         else:
+            if type(ind) is slice:
+                ind = range(*ind.indices(len(self._list)))
             Y = (self._list[i] for i in ind)
             len_Y = len(ind)
 

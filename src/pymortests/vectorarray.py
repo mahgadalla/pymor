@@ -22,15 +22,20 @@ pytestmark = pytest.mark.slow
 def ind_complement(v, ind):
     if ind is None:
         return []
-    if isinstance(ind, Number):
+    if isinstance(ind, _INDEXTYPES):
         ind = [ind]
-    return sorted(set(range(len(v))) - set(ind))
+    elif type(ind) is slice:
+        ind = range(*ind.indices(len(v)))
+    l = len(v)
+    return sorted(set(range(l)) - set(i if i >= 0 else l+i for i in ind))
 
 
 def indexed(v, ind):
     if ind is None:
         return v
-    elif isinstance(ind, Number):
+    elif type(ind) is slice:
+        return v[ind]
+    elif isinstance(ind, _INDEXTYPES):
         return v[[ind]]
     elif len(ind) == 0:
         return np.empty((0, v.shape[1]), dtype=v.dtype)
@@ -42,27 +47,35 @@ def invalid_inds(v, length=None):
     if length is None:
         yield len(v)
         yield [len(v)]
-        yield -1
-        yield [-1]
+        yield -len(v)-1
+        yield [-len(v)-1]
         yield [0, len(v)]
         length = 42
     if length > 0:
-        yield [-1] + [0, ] * (length - 1)
+        yield [-len(v)-1] + [0, ] * (length - 1)
         yield list(range(length - 1)) + [len(v)]
 
 
 def valid_inds(v, length=None):
     if length is None:
-        for ind in [None, [], list(range(len(v))), list(range(int(len(v)/2))), list(range(len(v))) * 2]:
-            yield ind
+        yield None
+        yield []
+        yield slice(0, len(v))
+        yield slice(0, 0)
+        yield slice(-3)
+        yield slice(0, len(v), 3)
+        yield slice(0, len(v)//2, 2)
+        yield list(range(-len(v), len(v)))
+        yield list(range(int(len(v)/2)))
+        yield list(range(len(v))) * 2
         length = 32
     if len(v) > 0:
-        for ind in [0, len(v) - 1]:
+        for ind in [-len(v), 0, len(v) - 1]:
             yield ind
         if len(v) == length:
             yield None
         np.random.seed(len(v) * length)
-        yield list(np.random.randint(0, len(v), size=length))
+        yield list(np.random.randint(-len(v), len(v), size=length))
     else:
         if len(v) == 0:
             yield None
@@ -73,18 +86,24 @@ def valid_inds_of_same_length(v1, v2):
     if len(v1) == len(v2):
         yield None, None
         yield list(range(len(v1))), list(range(len(v1)))
+        yield (slice(0, len(v1)),) * 2
+        yield (slice(0, 0),) * 2
+        yield (slice(-3),) * 2
+        yield (slice(0, len(v1), 3),) * 2
+        yield (slice(0, len(v1)//2, 2),) * 2
     yield [], []
     if len(v1) > 0 and len(v2) > 0:
         yield 0, 0
         yield len(v1) - 1, len(v2) - 1
+        yield -len(v1), -len(v2)
         yield [0], 0
         yield (list(range(int(min(len(v1), len(v2))/2))),) * 2
         np.random.seed(len(v1) * len(v2))
         for count in np.linspace(0, min(len(v1), len(v2)), 3):
-            yield (list(np.random.randint(0, len(v1), size=count)),
-                   list(np.random.randint(0, len(v2), size=count)))
-        yield None, np.random.randint(0, len(v2), size=len(v1))
-        yield np.random.randint(0, len(v1), size=len(v2)), None
+            yield (list(np.random.randint(-len(v1), len(v1), size=count)),
+                   list(np.random.randint(-len(v2), len(v2), size=count)))
+        yield None, np.random.randint(-len(v2), len(v2), size=len(v1))
+        yield np.random.randint(-len(v1), len(v1), size=len(v2)), None
 
 
 def valid_inds_of_different_length(v1, v2):
@@ -95,6 +114,8 @@ def valid_inds_of_different_length(v1, v2):
         if len(v1) > 1:
             yield [0, 1], 0
             yield [0, 1], [0]
+            yield [-1, 0, 1], [0]
+            yield slice(0, -1), []
         if len(v2) > 1:
             yield 0, [0, 1]
             yield [0], [0, 1]
@@ -106,8 +127,8 @@ def valid_inds_of_different_length(v1, v2):
                 if count2 == len(v2):
                     count2 -= 2
             if count2 >= 0:
-                yield (list(np.random.randint(0, len(v1), size=count1)),
-                       list(np.random.randint(0, len(v2), size=count2)))
+                yield (list(np.random.randint(-len(v1), len(v1), size=count1)),
+                       list(np.random.randint(-len(v2), len(v2), size=count2)))
 
 
 def invalid_ind_pairs(v1, v2):
@@ -119,6 +140,17 @@ def invalid_ind_pairs(v1, v2):
     for ind2 in valid_inds(v2):
         for ind1 in invalid_inds(v1, length=v2.len_ind(ind2)):
             yield ind1, ind2
+
+
+def ind_to_list(v, ind):
+    if ind is None:
+        return list(range(len(v)))
+    elif type(ind) is slice:
+        return list(range(*ind.indices(len(v))))
+    elif not hasattr(ind, '__len__'):
+        return [ind]
+    else:
+        return ind
 
 
 def test_empty(vector_array):
@@ -227,7 +259,7 @@ def test_append(compatible_vector_array_pair):
         c1.append(c2[ind])
         len_ind = v2.len_ind(ind)
         assert len(c1) == len_v1 + len_ind
-        assert np.all(almost_equal(c1[list(range(len_v1, len(c1)))], c2[ind]))
+        assert np.all(almost_equal(c1[len_v1:len(c1)], c2[ind]))
         if hasattr(v1, 'data'):
             assert np.allclose(c1.data, np.vstack((dv1, indexed(dv2, ind))))
         c2_ind = c2[ind]
@@ -237,7 +269,7 @@ def test_append(compatible_vector_array_pair):
         assert c2.dim == c2_ind.dim == c1.dim
         assert c2.subtype == c2_ind.subtype == c1.subtype
         assert len(c1) == len_v1 + 2 * len_ind
-        assert np.all(almost_equal(c1[list(range(len_v1, len_v1 + len_ind))], c1[list(range(len_v1 + len_ind, len(c1)))]))
+        assert np.all(almost_equal(c1[len_v1:len_v1+len_ind], c1[len_v1+len_ind:len(c1)]))
         assert np.all(almost_equal(c2, v2))
         if hasattr(v1, 'data'):
             assert np.allclose(c2.data, dv2)
@@ -249,7 +281,7 @@ def test_append_self(vector_array):
     len_v = len(v)
     c.append(c)
     assert len(c) == 2 * len_v
-    assert np.all(almost_equal(c[list(range(len_v))], c[list(range(len_v, len(c)))]))
+    assert np.all(almost_equal(c[:len_v], c[len_v:len(c)]))
     if hasattr(v, 'data'):
         assert np.allclose(c.data, np.vstack((v.data, v.data)))
     c = v.copy()
@@ -544,8 +576,7 @@ def test_lincomb_1d(vector_array):
         assert lc.subtype == v.subtype
         assert len(lc) == 1
         lc2 = v.zeros()
-        ind = list(range(len(v))) if ind is None else [ind] if isinstance(ind, _INDEXTYPES) else ind
-        for coeff, i in zip(coeffs, ind):
+        for coeff, i in zip(coeffs, ind_to_list(v, ind)):
             lc2.axpy(coeff, v[i])
         assert np.all(almost_equal(lc, lc2))
 
@@ -730,11 +761,7 @@ def test_amax(vector_array):
     for ind in valid_inds(v):
         max_inds, max_vals = v[ind].amax()
         assert np.allclose(np.abs(max_vals), v[ind].sup_norm())
-        if ind is None:
-            ind = range(len(v))
-        elif isinstance(ind, Number):
-            ind = [ind]
-        for i, max_ind, max_val in zip(ind, max_inds, max_vals):
+        for i, max_ind, max_val in zip(ind_to_list(v, ind), max_inds, max_vals):
             assert np.allclose(max_val, v[[i]].components([max_ind]))
 
 
@@ -757,7 +784,7 @@ def test_add(compatible_vector_array_pair):
     if len(v2) < len(v1):
         v2.append(v2[np.zeros(len(v1) - len(v2), dtype=np.int)])
     elif len(v2) > len(v1):
-        v2.remove(list(range(len(v2)-len(v1))))
+        del v2[:len(v2)-len(v1)]
     c1 = v1.copy()
     cc1 = v1.copy()
     c1.axpy(1, v2)
@@ -770,7 +797,7 @@ def test_iadd(compatible_vector_array_pair):
     if len(v2) < len(v1):
         v2.append(v2[np.zeros(len(v1) - len(v2), dtype=np.int)])
     elif len(v2) > len(v1):
-        v2.remove(list(range(len(v2)-len(v1))))
+        del v2[:len(v2)-len(v1)]
     c1 = v1.copy()
     c1.axpy(1, v2)
     v1 += v2
@@ -782,7 +809,7 @@ def test_sub(compatible_vector_array_pair):
     if len(v2) < len(v1):
         v2.append(v2[np.zeros(len(v1) - len(v2), dtype=np.int)])
     elif len(v2) > len(v1):
-        v2.remove(list(range(len(v2)-len(v1))))
+        del v2[list(range(len(v2)-len(v1)))]
     c1 = v1.copy()
     cc1 = v1.copy()
     c1.axpy(-1, v2)
@@ -795,7 +822,7 @@ def test_isub(compatible_vector_array_pair):
     if len(v2) < len(v1):
         v2.append(v2[np.zeros(len(v1) - len(v2), dtype=np.int)])
     elif len(v2) > len(v1):
-        v2.remove(list(range(len(v2)-len(v1))))
+        del v2[:len(v2)-len(v1)]
     c1 = v1.copy()
     c1.axpy(-1, v2)
     v1 -= v2

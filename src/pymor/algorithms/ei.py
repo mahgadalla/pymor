@@ -230,7 +230,7 @@ def deim(U, modes=None, error_norm=None, product=None):
         if len(interpolation_dofs) > 0:
             coefficients = np.linalg.solve(interpolation_matrix,
                                            collateral_basis[i].components(interpolation_dofs).T).T
-            U_interpolated = collateral_basis[list(range(len(interpolation_dofs)))].lincomb(coefficients)
+            U_interpolated = collateral_basis[:len(interpolation_dofs)].lincomb(coefficients)
             ERR = collateral_basis[i]
             ERR -= U_interpolated
         else:
@@ -248,13 +248,13 @@ def deim(U, modes=None, error_norm=None, product=None):
             break
 
         interpolation_dofs = np.hstack((interpolation_dofs, new_dof))
-        interpolation_matrix = collateral_basis[list(range(len(interpolation_dofs)))].components(interpolation_dofs).T
+        interpolation_matrix = collateral_basis[:len(interpolation_dofs)].components(interpolation_dofs).T
         errs.append(err)
 
         logger.info('')
 
     if len(interpolation_dofs) < len(collateral_basis):
-        del collateral_basis[list(range(len(interpolation_dofs), len(collateral_basis)))]
+        del collateral_basis[len(interpolation_dofs):len(collateral_basis)]
 
     logger.info('Finished.')
 

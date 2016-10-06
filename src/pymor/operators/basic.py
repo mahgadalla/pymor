@@ -290,9 +290,9 @@ class ProjectedOperator(OperatorBase):
         assert dim_range is None or self.range_basis is not None, 'not implemented'
         name = name or '{}_projected_to_subbasis'.format(self.name)
         source_basis = self.source_basis if dim_source is None \
-            else self.source_basis.copy(list(range(dim_source)))
+            else self.source_basis[:dim_source]
         range_basis = self.range_basis if dim_range is None \
-            else self.range_basis.copy(list(range(dim_range)))
+            else self.range_basis[:dim_range]
         return ProjectedOperator(self.operator, range_basis, source_basis, product=None,
                                  solver_options=self.solver_options, name=name)
 

@@ -17,11 +17,11 @@ class WorkerPoolDefaultImplementations(object):
         if copy:
             slices = []
             for i in range(len(self)):
-                slices.append(U[list(range(i*slice_len, min((i+1)*slice_len, len(U))))])
+                slices.append(U[i*slice_len:min((i+1)*slice_len, len(U))])
         else:
             slices = [U.empty() for _ in range(len(self))]
             for s in slices:
-                s.append(U[list(range(0, min(slice_len, len(U))))], remove_from_other=True)
+                s.append(U[:min(slice_len, len(U))], remove_from_other=True)
         remote_U = self.push(U.empty())
         del U
         self.map(_append_array_slice, slices, U=remote_U)

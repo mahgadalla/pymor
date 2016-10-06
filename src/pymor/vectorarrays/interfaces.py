@@ -441,36 +441,35 @@ class VectorArrayInterface(BasicInterface):
 
     def check_ind(self, ind):
         """Check if `ind` is an admissable list of indices in the sense of the class documentation."""
+        l = len(self)
         return (ind is None or
-                isinstance(ind, _INDEXTYPES) and 0 <= ind < len(self) or
-                isinstance(ind, list) and (len(ind) == 0 or 0 <= min(ind) and max(ind) < len(self)) or
-                (isinstance(ind, np.ndarray) and ind.ndim == 1
-                 and (len(ind) == 0 or 0 <= np.min(ind) and np.max(ind) < len(self))))
+                type(ind) is slice or
+                isinstance(ind, _INDEXTYPES) and -l <= ind < l or
+                isinstance(ind, (list, np.ndarray)) and all(-l <= i < l for i in ind))
 
     def check_ind_unique(self, ind):
         """Check if `ind` is an admissable list of non-repeated indices in the sense of the class documentation."""
-        if ind is None or isinstance(ind, Number) and 0 <= ind < len(self):
-            return True
-        elif isinstance(ind, list):
-            if len(ind) == 0:
-                return True
-            s = set(ind)
-            return len(s) == len(ind) and 0 <= min(s) and max(s) < len(self)
-        elif isinstance(ind, np.ndarray) and ind.ndim == 1:
-            if len(ind) == 0:
-                return True
-            u = np.unique(ind)
-            return len(u) == len(ind) and 0 <= u[0] and u[-1] < len(self)
-        else:
-            return False
+        l = len(self)
+        return (ind is None or
+                type(ind) is slice or
+                isinstance(ind, _INDEXTYPES) and -l <= ind < l or
+                isinstance(ind, (list, np.ndarray)) and len(set(i if i >= 0 else l+i for i in ind if -l <= i < l)) == len(ind))
 
     def len_ind(self, ind):
         """Return the number of specified indices."""
-        return len(self) if ind is None else 1 if isinstance(ind, _INDEXTYPES) else len(ind)
+        l = len(self)
+        return (len(self) if ind is None else
+                len(range(*ind.indices(l))) if type(ind) is slice else
+                1 if not hasattr(ind, '__len__') else
+                len(ind))
 
     def len_ind_unique(self, ind):
         """Return the number of specified unique indices."""
-        return len(self) if ind is None else 1 if isinstance(ind, Number) else len(set(ind))
+        l = len(self)
+        return (l if ind is None else
+                len(range(*ind.indices(l))) if type(ind) is slice else
+                1 if isinstance(ind, _INDEXTYPES) else
+                len(set(i if i >= 0 else l+i for i in ind)))
 
 
 class VectorSpace(BasicInterface):
