@@ -12,13 +12,15 @@ from pymor.core.interfaces import BasicInterface
 from pymor.core.pickle import dumps, loads, dumps_function, PicklingError
 from pymor.grids.subgrid import SubGrid
 from pymor.operators.numpy import NumpyMatrixBasedOperator
+from pymor.vectorarrays.numpy import NumpyVectorArray
 
 PY2 = sys.version_info.major == 2
 
 is_equal_ignored_attributes = \
     ((SubGrid, {'_uid', '_CacheableInterface__cache_region', '_SubGrid__parent_grid'}),
      (NumpyMatrixBasedOperator, {'_uid', '_CacheableInterface__cache_region', '_assembled_operator'}),
-     (BasicInterface, {'_name', '_uid', '_CacheableInterface__cache_region'}))
+     (NumpyVectorArray, {'_uid', '_copies', '_ind', '_real_array'}),
+     (BasicInterface, {'_uid', '_CacheableInterface__cache_region'}))
 
 is_equal_dispatch_table = {}
 
