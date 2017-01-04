@@ -68,6 +68,7 @@ def _write_vtu_series(grid, coordinates, connectivity, data, filename_base, last
         w.save()
         group.addFile(filepath=fn, sim_time=i)
     group.save()
+    return (fn_tpl.format(filename_base, i) for i in range(steps))
 
 def write_vtk(grid, data, filename_base, codim=2, binary_vtk=True, last_step=None):
     """Output grid-associated data in (legacy) vtk format
@@ -86,6 +87,8 @@ def write_vtk(grid, data, filename_base, codim=2, binary_vtk=True, last_step=Non
 
     last_step
         if set must be <= len(data) to restrict output of timeseries
+
+    :return list of filenames written
     """
     if not config.HAVE_PYVTK:
         raise ImportError('could not import pyevtk')
@@ -96,6 +99,6 @@ def write_vtk(grid, data, filename_base, codim=2, binary_vtk=True, last_step=Non
 
     subentities, coordinates, entity_map = flatten_grid(grid)
     x, y, z = coordinates[:, 0].copy(), coordinates[:, 1].copy(), np.zeros(coordinates[:, 1].size)
-    _write_vtu_series(grid, coordinates=(x, y, z), connectivity=subentities, data=data.data,
+    return _write_vtu_series(grid, coordinates=(x, y, z), connectivity=subentities, data=data.data,
                       filename_base=filename_base, last_step=last_step, is_cell_data=(codim == 0))
 

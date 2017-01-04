@@ -86,8 +86,16 @@ subgrid_generators = [lambda args=args: subgrid_factory(*args) for args in
 def grid(request):
     return request.param()
 
+@pytest.fixture(params=rect_grid_generators)
+def rect_grid(request):
+    return request.param()
+
 @pytest.fixture(params=(rect_grid_generators + tria_grid_generators))
 def rect_or_tria_grid(request):
+    return request.param()
+
+@pytest.fixture(params=tria_grid_generators)
+def tria_grid(request):
     return request.param()
 
 @pytest.fixture(params=(rect_grid_generators + oned_grid_generators))

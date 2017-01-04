@@ -8,8 +8,10 @@ import pytest
 import itertools
 from tempfile import NamedTemporaryFile
 
+import subprocess
+
 from pymortests.base import TestInterface, runmodule
-from pymortests.fixtures.grid import rect_or_tria_grid
+from pymortests.fixtures.grid import rect_or_tria_grid, rect_grid, tria_grid
 from pymortests.base import polynomials
 from pymor.tools.deprecated import Deprecated
 from pymor.tools.quadratures import GaussQuadratures
@@ -85,17 +87,29 @@ class TestCmp(TestInterface):
                 assert not float_cmp(-inf, inf, rtol, atol), msg
 
 
+def _check_vtk_file(path):
+    try:
+        # this check will current fail if no python2 is available
+        # it needs to be a seperate process since there are no py3 bindings for paraview
+        out = subprocess.check_output(['./paraview_file_check.py', path], stderr=subprocess.STDOUT, universal_newlines=False)
+    except subprocess.CalledProcessError as cpe:
+        assert cpe.returncode == 77  #no paraview bindings, special hardcoded magic value :|
+    else:
+        # paraview bindings to not raise an Exception for unreadable files. (Or ANY unrecoverable error afaict)
+        assert 'Error' not in out
+
 def test_vtkio(rect_or_tria_grid):
     grid = rect_or_tria_grid
-    steps = 4
-    for dim in range(1, 2):
-        for codim, data in enumerate((NumpyVectorSpace.from_data(np.zeros((steps, grid.size(c)))) for c in range(grid.dim+1))):
-            with NamedTemporaryFile('wb') as out:
-                if codim == 1:
-                    with pytest.raises(NotImplementedError):
-                        write_vtk(grid, data, out.name, codim=codim)
-                else:
+    steps = 1
+    for codim, data in enumerate((NumpyVectorSpace.from_data(np.zeros((steps, grid.size(c)))) for c in range(grid.dim+1))):
+        with NamedTemporaryFile('wb', delete=False) as out:
+            if codim == 1:
+                with pytest.raises(NotImplementedError):
                     write_vtk(grid, data, out.name, codim=codim)
+            else:
+                files = write_vtk(grid, data, out.name, codim=codim)
+                for f in files:
+                    _check_vtk_file(f)
 
 
 class TestTiming(TestInterface):
