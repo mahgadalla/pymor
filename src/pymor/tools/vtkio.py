@@ -3,6 +3,8 @@
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 import numpy as np
+import pyvtk
+import pprint
 
 from pymor.core.config import config
 from pymor.grids import referenceelements
@@ -17,58 +19,34 @@ def _write_vtu_series(grid, coordinates, connectivity, data, filename_base, last
     steps = last_step + 1 if last_step is not None else len(data)
     fn_tpl = "{}_{:08d}"
 
-    npoints = grid.size(2)
-    ncells = grid.size(0)
-
     ref = grid.reference_element
-    if ref is ref is referenceelements.triangle:
-        points_per_cell = 3
-        vtk_el_type = VtkTriangle.tid
+    if ref is referenceelements.triangle:
+        vtk_grid = pyvtk.UnstructuredGrid(coordinates, triangle=connectivity)
     elif ref is referenceelements.square:
-        points_per_cell = 4
-        vtk_el_type = VtkQuad.tid
+        vtk_grid = pyvtk.UnstructuredGrid(coordinates, quad=connectivity)
     else:
         raise NotImplementedError("vtk output only available for grids with triangle or rectangle reference elments")
-
-    connectivity = connectivity.reshape(-1)
-    cell_types = np.empty(ncells, dtype='uint8')
-    cell_types[:] = vtk_el_type
-    offsets = np.arange(start=points_per_cell, stop=ncells*points_per_cell+1, step=points_per_cell, dtype='int32')
 
     group = VtkGroup(filename_base)
     for i in range(steps):
         fn = fn_tpl.format(filename_base, i)
-        vtk_data = data[i, :]
-        w = VtkFile(fn, VtkUnstructuredGrid)
-        w.openGrid()
-        w.openPiece(ncells=ncells, npoints=npoints)
+        raw_data = data[i, :]
+        print('{}_s{}_raw{}'.format(fn, i, raw_data.shape))
+        pprint.pprint(raw_data)
 
-        w.openElement("Points")
-        w.addData("Coordinates", coordinates)
-        w.closeElement("Points")
-        w.openElement("Cells")
-        w.addData("connectivity", connectivity)
-        w.addData("offsets", offsets)
-        w.addData("types", cell_types)
-        w.closeElement("Cells")
         if is_cell_data:
-            _addDataToFile(w, cellData={"Data": vtk_data}, pointData=None)
+            vtk_data = pyvtk.CellData(pyvtk.Scalars(raw_data, name='CellData'))
         else:
-            _addDataToFile(w, cellData=None, pointData={"Data": vtk_data})
+            vtk_data = pyvtk.PointData(pyvtk.Scalars(raw_data, name='PointData'))
 
-        w.closePiece()
-        w.closeGrid()
-        w.appendData(coordinates)
-        w.appendData(connectivity).appendData(offsets).appendData(cell_types)
-        if is_cell_data:
-            _appendDataToFile(w, cellData={"Data": vtk_data}, pointData=None)
-        else:
-            _appendDataToFile(w, cellData=None, pointData={"Data": vtk_data})
+        vtk = pyvtk.VtkData(vtk_grid, 'example')
+        vtk.tofile(fn)
+        #vtk.tofile(fn,'binary')
 
-        w.save()
         group.addFile(filepath=fn, sim_time=i)
     group.save()
     return (fn_tpl.format(filename_base, i) for i in range(steps))
+
 
 def write_vtk(grid, data, filename_base, codim=2, binary_vtk=True, last_step=None):
     """Output grid-associated data in (legacy) vtk format
