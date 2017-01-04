@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 import itertools
 from tempfile import NamedTemporaryFile
+import os.path
 
 import subprocess
 
@@ -91,7 +92,8 @@ def _check_vtk_file(path):
     try:
         # this check will current fail if no python2 is available
         # it needs to be a seperate process since there are no py3 bindings for paraview
-        out = subprocess.check_output(['./paraview_file_check.py', path], stderr=subprocess.STDOUT, universal_newlines=False)
+        script = os.path.join(os.path.dirname(__file__), '/paraview_file_check.py')
+        out = subprocess.check_output([script, path], stderr=subprocess.STDOUT, universal_newlines=False)
     except subprocess.CalledProcessError as cpe:
         assert cpe.returncode == 77  #no paraview bindings, special hardcoded magic value :|
     else:
