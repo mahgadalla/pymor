@@ -8,7 +8,7 @@ import pytest
 import itertools
 from tempfile import NamedTemporaryFile
 import os.path
-
+from pkg_resources import resource_filename
 import subprocess
 
 from pymortests.base import TestInterface, runmodule
@@ -92,8 +92,8 @@ def _check_vtk_file(path):
     try:
         # this check will current fail if no python2 is available
         # it needs to be a seperate process since there are no py3 bindings for paraview
-        script = os.path.join(os.path.dirname(__file__), '/paraview_file_check.py')
-        out = subprocess.check_output([script, path], stderr=subprocess.STDOUT, universal_newlines=False)
+        script = resource_filename('pymortests', 'paraview_file_check.py')
+        out = subprocess.check_output([script, path], stderr=subprocess.STDOUT, universal_newlines=True)
     except subprocess.CalledProcessError as cpe:
         assert cpe.returncode == 77  #no paraview bindings, special hardcoded magic value :|
     else:
