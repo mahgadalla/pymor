@@ -19,6 +19,9 @@ def _get_fenics_version():
     if version[:2] != [1, 6]:
         import warnings
         warnings.warn('FEniCS support has only been tested with dolfin 1.6.')
+    from pymor.tools import mpi
+    if mpi.parallel and not df.has_petsc():
+        warnings.warn('dolfin has not been built with PETSc support. Parallel execution will fail!')
     return version
 
 
