@@ -13,5 +13,6 @@ pyamg
 pyevtk>=1.1
 pyopengl
 pytest-cov
-pytest-flake8
-pytest>=3.3
+pytest-docstyle
+pytest>=3.5
+snakeviz

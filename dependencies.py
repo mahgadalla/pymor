@@ -3,8 +3,8 @@
 # Copyright 2013-2017 pyMOR developers and contributors. All rights reserved.
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-_PYTEST = 'pytest>=3.3'
-tests_require = [_PYTEST, 'pytest-cov', 'envparse', 'docker', 'pytest-flake8']
+_PYTEST = 'pytest>=3.5'
+tests_require = [_PYTEST, 'pytest-cov', 'envparse', 'docker', 'pytest-docstyle']
 install_requires = ['cython>=0.20.1', 'numpy>=1.8.1', 'scipy>=0.13.3', 'Sphinx>=1.4.0', 'docopt', 'Qt.py', 'packaging']
 setup_requires = ['pytest-runner>=2.9', 'cython>=0.20.1', 'numpy>=1.8.1', 'packaging']
 install_suggests = {'ipython>=3.0': 'an enhanced interactive python shell',
@@ -17,9 +17,10 @@ install_suggests = {'ipython>=3.0': 'an enhanced interactive python shell',
                     _PYTEST: 'testing framework required to execute unit tests',
                     'PyQt5': 'solution visualization for builtin discretizations',
                     'pillow': 'image library used for bitmap data functions',
+                    'snakeviz': 'visualization tool for cProfile',
                     'psutil': 'Process management abstractions used for gui'}
 doc_requires = ['sphinx>=1.5', 'cython', 'numpy']
-travis_requires = ['pytest-cov', 'pytest-xdist', 'check-manifest', 'codecov', 'pytest-travis-fold']
+travis_requires = ['pytest-cov', 'pytest-xdist', 'check-manifest', 'python-coveralls', 'pytest-travis-fold']
 import_names = {'ipython': 'IPython',
                 'pytest-cache': 'pytest_cache',
                 'pytest-instafail': 'pytest_instafail',
