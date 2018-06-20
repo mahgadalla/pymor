@@ -16,7 +16,6 @@ if config.HAVE_FENICS:
     from pymor.operators.constructions import ZeroOperator
     from pymor.vectorarrays.list import CopyOnWriteVector, ListVectorSpace
 
-
     class FenicsVector(CopyOnWriteVector):
         """Wraps a FEniCS vector to make it usable with ListVectorArray."""
 
@@ -100,7 +99,6 @@ if config.HAVE_FENICS:
         def __neg__(self):
             return FenicsVector(-self.impl)
 
-
     class FenicsVectorSpace(ListVectorSpace):
 
         def __init__(self, V, id_='STATE'):
@@ -124,7 +122,6 @@ if config.HAVE_FENICS:
 
         def make_vector(self, obj):
             return FenicsVector(obj)
-
 
     class FenicsMatrixOperator(OperatorBase):
         """Wraps a FEniCS matrix as an |Operator|."""
@@ -180,11 +177,9 @@ if config.HAVE_FENICS:
 
             return FenicsMatrixOperator(matrix, self.source.V, self.range.V, name=name)
 
-
     @defaults('solver', 'preconditioner')
     def _solver_options(solver='bicgstab', preconditioner='amg'):
         return {'solver': solver, 'preconditioner': preconditioner}
-
 
     def _apply_inverse(matrix, r, v, options=None):
         options = options or _solver_options()
@@ -193,7 +188,6 @@ if config.HAVE_FENICS:
         # preconditioner argument may only be specified for iterative solvers:
         options = (solver, preconditioner) if preconditioner else (solver,)
         df.solve(matrix, r, v, *options)
-
 
     class FenicsVisualizer(BasicInterface):
         """Visualize a FEniCS grid function.

@@ -40,7 +40,6 @@ if platform.python_implementation() == 'CPython':
         pickler.persistent_id = _function_pickling_handler
         pickler.dump(obj)
 
-
     def dumps(obj, protocol=None):
         file = IOtype()
         pickler = pickle.Pickler(file, protocol=PROTOCOL)
@@ -48,12 +47,10 @@ if platform.python_implementation() == 'CPython':
         pickler.dump(obj)
         return file.getvalue()
 
-
     def load(file):
         unpickler = pickle.Unpickler(file)
         unpickler.persistent_load = _function_unpickling_handler
         return unpickler.load()
-
 
     def loads(str):
         file = IOtype(str)
@@ -100,6 +97,7 @@ def _generate_opcode_new(code_object):
     for ins in dis.get_instructions(code_object):
         yield (ins.opcode, ins.arg)
 
+
 if (sys.version_info.major, sys.version_info.minor) < (3, 4):
     # cleverer dispatch via 'yield from' at runtime will
     # not work due to it missing from < 3.4 and not being
@@ -107,6 +105,7 @@ if (sys.version_info.major, sys.version_info.minor) < (3, 4):
     _generate_opcode = _generate_opcode_old
 else:
     _generate_opcode = _generate_opcode_new
+
 
 def _global_names(code_object):
     '''Return all names in code_object.co_names which are used in a LOAD_GLOBAL statement.'''
