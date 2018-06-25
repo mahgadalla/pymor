@@ -14,5 +14,6 @@ pyevtk>=1.1
 pyopengl
 pytest-cov
 pytest-docstyle
+pytest-flake8
 pytest>=3.5
 snakeviz
